@@ -1,9 +1,6 @@
-# Web API framework and local development server
+
+# Web API framework
 fastapi[standard-no-fastapi-cloud-cli]==0.160.0
 
-# Databse
+# PostgreSQL driver
 psycopg[binary]==3.2.9
-
-# Development and testing tools
-pytest==9.1.1
-ruff==0.17.1

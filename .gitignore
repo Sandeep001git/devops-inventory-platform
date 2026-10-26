@@ -25,3 +25,9 @@ coverage.xml
 .idea/
 .DS_Store
 Thumbs.db
+
+#Agents
+.agents
+.codex
+.claude
+.aws

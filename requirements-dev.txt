@@ -3,5 +3,5 @@
 
 # Development and testing tools
 pytest==9.1.1
-ruff==0.17.1
+ruff==0.17.2
 bandit==1.9.4

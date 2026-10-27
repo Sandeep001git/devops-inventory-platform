@@ -69,5 +69,8 @@ jobs:
       - name: Run lint checks
         run: ruff check app tests
 
+      - name: Run Bandit security scan
+        run: bandit -r app -ll
+
       - name: Run tests
         run: python -m pytest -v

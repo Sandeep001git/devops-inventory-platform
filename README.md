@@ -1,3 +1,5 @@
+[![CI](https://github.com/Sandeep001git/devops-inventory-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/Sandeep001git/devops-inventory-platform/actions/workflows/ci.yml)
+
 # DevOps Platform
 
 A portfolio project for building and operating a containerized inventory
@@ -29,11 +31,10 @@ planned and will be documented as they are completed and verified.
 - Verify changes with repeatable commands.
 - Document failures, fixes, and operational decisions.
 
-
 ## API Endpoints
 
 | Method | Endpoint | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | GET | `/` | Service information |
 | GET | `/health` | API liveness check |
 | GET | `/ready` | PostgreSQL readiness check |

@@ -94,3 +94,123 @@ jobs:
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL,HIGH
+
+  docker_smoke_test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: devops_inventory_smoke
+          POSTGRES_USER: app_user
+          POSTGRES_PASSWORD: smoke_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app_user -d devops_inventory_smoke"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: devops_inventory_smoke
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: smoke_test_password
+
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set Up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+
+      - name: Install Migration dependence
+        run: python -m pip install "psycopg[binary]==3.3.6"
+
+      - name: Apply Database Migration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          import psycopg
+
+          with psycopg.connect(
+              host=os.environ["POSTGRES_HOST"],
+              port=int(os.environ["POSTGRES_PORT"]),
+              dbname=os.environ["POSTGRES_DB"],
+              user=os.environ["POSTGRES_USER"],
+              password=os.environ["POSTGRES_PASSWORD"],
+          ) as connection:
+              with connection.cursor() as cursor:
+                  cursor.execute(
+                      Path("migrations/001_create_inventory_items.sql").read_text()
+                  )
+          PY
+
+      - name: Build Docker Image
+        run: docker build -t devops-inventory-api:smoke .
+
+      - name: Start API container
+        run: |
+          docker run -d \
+            --network host \
+            --name inventory-api-smoke \
+            -e POSTGRES_HOST="$POSTGRES_HOST" \
+            -e POSTGRES_PORT="$POSTGRES_PORT" \
+            -e POSTGRES_DB="$POSTGRES_DB" \
+            -e POSTGRES_USER="$POSTGRES_USER" \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            devops-inventory-api:smoke
+
+      - name: Verify API Endpoint
+        run: |
+          set -eu
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            if python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)" 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" -ne 1 ]; then
+              echo "API did not become ready."
+              docker logs inventory-api-smoke
+              exit 1
+          fi
+
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          for path in ("/health", "/ready", "/items"):
+              with urllib.request.urlopen(
+                  f"http://127.0.0.1:8000{path}", timeout=5
+              ) as response:
+                  body = response.read()
+                  assert response.status == 200, (
+                      f"{path} returned HTTP {response.status}"
+                  )
+                  data = json.loads(body)
+
+                  if path == "/items":
+                      assert isinstance(data, list), (
+                          "/items must return a JSON list"
+                      )
+
+                  print(f"PASS {path}: HTTP {response.status}")
+          PY
+
+      - name: Clean Up API Endpoint
+        if: always()
+        run: |
+          docker logs inventory-api-smoke || true
+          docker rm -f inventory-api-smoke || true

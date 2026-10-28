@@ -156,6 +156,15 @@ jobs:
       - name: Build Docker Image
         run: docker build -t devops-inventory-api:smoke .
 
+      - name: Verify Container Runs as Non-Root
+        run: |
+          container_user=$(docker run --rm --entrypoint id devops-inventory-api:smoke -u)
+          if [ "$container_user" = "0" ]; then
+            echo "ERROR: Container is running as root."
+            exit 1
+          fi
+          echo "PASS: Container runs as UID $container_user."
+
       - name: Start API container
         run: |
           docker run -d \

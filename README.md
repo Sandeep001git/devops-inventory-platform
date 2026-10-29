@@ -53,7 +53,7 @@ The application has been verified locally with Docker Compose, including API hea
 The API is available at `http://127.0.0.1:8000` when running locally.
 
 | Method | Endpoint | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | GET | `/` | Service information |
 | GET | `/health` | API liveness check |
 | GET | `/ready` | PostgreSQL readiness check |
@@ -153,3 +153,4 @@ PostgreSQL stores its data in the named Docker volume `postgres_data`. Restartin
 The `.env.dev` file contains local development configuration and must not be committed to version control.
 
 If the repository provides an `.env.example` file, use it as a reference for the required environment variables. Keep real passwords, tokens, and other secrets out of the example file and Git history.
+echo '<!-- CI trigger test -->' >> README.md

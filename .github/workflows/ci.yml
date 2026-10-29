@@ -3,6 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "23 2 * * 1"
 
 permissions:
   contents: read

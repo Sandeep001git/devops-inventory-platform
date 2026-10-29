@@ -75,6 +75,7 @@ jobs:
       - name: Run tests
         run: python -m pytest -v
 
+# Scan the built image for security vulnerabilities.
   docker_scan:
     runs-on: ubuntu-latest
 

@@ -85,6 +85,11 @@ jobs:
       - name: Build Docker image
         run: docker build -t devops-inventory-api:ci .
 
+      - name: Check urllib3 version in image
+        run: |
+          docker run --rm --entrypoint python devops-inventory-api:ci \
+            -m pip show urllib3
+
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:

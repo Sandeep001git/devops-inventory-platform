@@ -11,6 +11,7 @@ class DatabaseConfig(TypedDict):
     dbname: str
     user: str
     password: str
+    sslmode: str
 
 
 def get_database_config() -> DatabaseConfig:
@@ -38,4 +39,5 @@ def get_database_config() -> DatabaseConfig:
         "dbname": os.environ["POSTGRES_DB"],
         "user": os.environ["POSTGRES_USER"],
         "password": os.environ["POSTGRES_PASSWORD"],
+	    "sslmode": os.getenv("POSTGRES_SSLMODE", "require"),
     }

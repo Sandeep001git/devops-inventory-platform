@@ -153,4 +153,3 @@ PostgreSQL stores its data in the named Docker volume `postgres_data`. Restartin
 The `.env.dev` file contains local development configuration and must not be committed to version control.
 
 If the repository provides an `.env.example` file, use it as a reference for the required environment variables. Keep real passwords, tokens, and other secrets out of the example file and Git history.
-echo '<!-- CI trigger test -->' >> README.md

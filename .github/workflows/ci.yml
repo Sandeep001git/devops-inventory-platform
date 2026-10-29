@@ -34,6 +34,7 @@ jobs:
       POSTGRES_DB: devops_inventory_test
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: ci_test_password
+      POSTGRES_SSLMODE: disable
 
     steps:
       - name: Check out repository

@@ -153,3 +153,68 @@ PostgreSQL stores its data in the named Docker volume `postgres_data`. Restartin
 The `.env.dev` file contains local development configuration and must not be committed to version control.
 
 If the repository provides an `.env.example` file, use it as a reference for the required environment variables. Keep real passwords, tokens, and other secrets out of the example file and Git history.
+
+## Production Deployment
+
+The API is deployed on Render using a Neon PostgreSQL database.
+
+- **Production API:** <https://devops-inventory-platform.onrender.com>
+- **API health:** `/health`
+- **Database readiness:** `/ready`
+- **Interactive API documentation:** `/docs`
+
+Production database connections use SSL with `POSTGRES_SSLMODE=require`. Local Docker Compose uses `POSTGRES_SSLMODE=disable` for its local PostgreSQL service.
+
+Production secrets are configured through the hosting provider's environment variables and are not stored in the repository.
+
+## Security and Reliability
+
+The application includes the following security and reliability controls:
+
+- **Rate limiting:** The `POST /items` endpoint allows 5 requests per minute per client IP. Excess requests receive HTTP `429 Too Many Requests`.
+- **Security headers:** HTTP responses include HSTS, `X-Content-Type-Options`, `X-Frame-Options`, Content Security Policy, and Referrer Policy headers.
+- **Non-root container:** The API container runs as a non-root user.
+- **SQL injection protection:** Database operations use parameterized queries and safe SQL identifier handling.
+- **Database readiness:** The `/ready` endpoint verifies PostgreSQL connectivity.
+- **Application logging:** Inventory creation and deletion events are logged with item IDs. Database readiness failures include exception details in application logs.
+- **Secret management:** Credentials are supplied through environment variables rather than committed configuration files.
+
+## Continuous Integration and Security Scanning
+
+GitHub Actions automatically validates the project.
+
+The CI workflow includes:
+
+| Job | Responsibility |
+| --- | --- |
+| `test` | Ruff, pytest, and Bandit checks |
+| `docker_scan` | Trivy vulnerability scanning of the Docker image |
+| `docker_smoke_test` | Container startup, non-root execution, and API endpoint verification |
+| `production_health_check` | Checks production API and database readiness |
+
+The production health check runs on pushes to `main` and scheduled weekly executions.
+
+The workflow also uses pinned GitHub Actions commit SHAs and a restricted repository permission model.
+
+## Operational Logging
+
+View application logs:
+
+```bash
+docker compose --env-file .env.dev logs --tail=100 api
+```
+
+Follow logs continuously:
+
+```bash
+docker compose --env-file .env.dev logs -f api
+```
+
+Example application events include:
+
+```text
+INFO inventory_api Inventory item created: id=1
+INFO inventory_api Inventory item deleted: id=3
+```
+
+Use these logs to investigate application behavior and diagnose database connectivity problems.

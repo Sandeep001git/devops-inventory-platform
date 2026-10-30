@@ -4,3 +4,4 @@ fastapi[standard-no-fastapi-cloud-cli]==0.162.0
 
 # PostgreSQL driver
 psycopg[binary]==3.3.6
+slowapi==0.1.9

@@ -228,3 +228,27 @@ jobs:
         run: |
           docker logs inventory-api-smoke || true
           docker rm -f inventory-api-smoke || true
+
+  production_health_check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Check production API health
+        run: |
+          set -eu
+          response=$(curl --fail --silent --show-error \
+            --retry 5 --retry-delay 10 --retry-all-errors \
+            https://devops-inventory-platform.onrender.com/ready)
+
+          echo "$response"
+
+          echo "$response" | python -c '
+          import json
+          import sys
+
+          data = json.load(sys.stdin)
+          assert data["status"] == "ready"
+          assert data["database"] == "ok"
+          print("PASS: Production API and database are healthy.")
+          '

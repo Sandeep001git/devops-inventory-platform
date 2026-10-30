@@ -1,9 +1,13 @@
-
 import pytest
 from psycopg import sql
 
 from app.database import get_connection
+from app.main import limiter
 
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter() -> None:
+    limiter.reset()
 
 @pytest.fixture(autouse=True)
 def isolate_inventory_items() -> None:

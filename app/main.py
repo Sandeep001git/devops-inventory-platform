@@ -1,6 +1,13 @@
+import logging
+from typing import cast
+
 import psycopg
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from psycopg import sql
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.types import ExceptionHandler
 
 from app.database import get_connection
 from app.schemas import InventoryItemCreate, InventoryItemUpdate
@@ -9,6 +16,20 @@ app = FastAPI(
     title="DevOps Inventory API",
     description="An inventory management API built as a DevOps portfolio project.",
     version="0.1.0",
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+
+logger = logging.getLogger("inventory_api")
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    cast(ExceptionHandler, _rate_limit_exceeded_handler),
 )
 
 @app.middleware("http")
@@ -47,6 +68,7 @@ def readiness_check() -> dict[str, str]:
             cursor.execute("SELECT 1")
             row = cursor.fetchone()
     except psycopg.Error as exc:
+        logger.exception("Database readiness check failed")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is unavailable",
@@ -85,7 +107,11 @@ def list_items() -> list[dict[str, object]]:
     ]
 
 @app.post("/items", status_code=status.HTTP_201_CREATED)
-def create_item(item: InventoryItemCreate) -> dict[str, object]:
+@limiter.limit("5/minute")
+def create_item(
+    request: Request,
+    item: InventoryItemCreate,
+) -> dict[str, object]:
     """Create an inventory item in PostgreSQL."""
     with get_connection() as connection, connection.cursor() as cursor:
         cursor.execute(
@@ -100,6 +126,8 @@ def create_item(item: InventoryItemCreate) -> dict[str, object]:
 
         if row is None:
             raise RuntimeError("Insert returned no inventory item")
+
+        logger.info("Inventory item created: id=%s", row[0])
 
     return {
         "id": row[0],
@@ -148,6 +176,8 @@ def delete_item(item_id: int) -> None:
             (item_id,),
         )
         deleted_row = cursor.fetchone()
+        if deleted_row is not None:
+            logger.info("Inventory item deleted: id=%s", deleted_row[0])
 
     if deleted_row is None:
         raise HTTPException(

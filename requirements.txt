@@ -1,7 +1,7 @@
 
 # Web API framework
-fastapi[standard-no-fastapi-cloud-cli]==0.162.1
+fastapi[standard-no-fastapi-cloud-cli]==0.162.7
 
 # PostgreSQL driver
-psycopg[binary]==3.3.8
+psycopg[binary]==3.3.9
 slowapi==0.1.10
